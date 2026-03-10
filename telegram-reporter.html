@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TGReport — Telegram Reporter</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: #1e2530;
+    --accent: #00c2ff;
+    --accent2: #0088cc;
+    --tg-blue: #229ed9;
+    --green: #00e676;
+    --red: #ff4f6a;
+    --yellow: #ffd600;
+    --text: #e8edf5;
+    --muted: #5a6475;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,194,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,194,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow-orb {
+    position: fixed;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,136,204,0.08) 0%, transparent 70%);
+    top: -200px; left: -200px;
+    pointer-events: none;
+    z-index: 0;
+    animation: orbFloat 12s ease-in-out infinite;
+  }
+  .glow-orb2 {
+    position: fixed;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,194,255,0.05) 0%, transparent 70%);
+    bottom: -100px; right: -100px;
+    pointer-events: none;
+    z-index: 0;
+    animation: orbFloat 15s ease-in-out infinite reverse;
+  }
+  @keyframes orbFloat {
+    0%,100% { transform: translate(0,0); }
+    50% { transform: translate(40px, 30px); }
+  }
+
+  /* Header */
+  header {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 40px;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    background: rgba(10,12,16,0.8);
+    position: sticky; top: 0;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--mono);
+    font-size: 18px; font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--tg-blue), var(--accent));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .logo span { color: var(--accent); }
+
+  .status-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--green);
+    background: rgba(0,230,118,0.08);
+    border: 1px solid rgba(0,230,118,0.2);
+    padding: 4px 10px; border-radius: 20px;
+  }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  /* Main layout */
+  main {
+    position: relative; z-index: 5;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 50px 24px 80px;
+  }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 50px;
+    animation: fadeUp 0.6s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(0,194,255,0.08);
+    border: 1px solid rgba(0,194,255,0.2);
+    padding: 5px 14px; border-radius: 20px;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: 700; line-height: 1.15;
+    letter-spacing: -1px;
+    margin-bottom: 14px;
+  }
+  h1 em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--accent), var(--tg-blue));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .hero-desc {
+    font-size: 15px; color: var(--muted);
+    line-height: 1.7; max-width: 500px; margin: 0 auto;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 28px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+  .tab {
+    flex: 1; padding: 10px 16px;
+    background: none; border: none; cursor: pointer;
+    font-family: var(--sans); font-size: 13px; font-weight: 600;
+    color: var(--muted); border-radius: 9px;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .tab.active {
+    background: var(--surface2);
+    color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(0,194,255,0.2);
+  }
+  .tab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.03); }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 20px;
+    animation: fadeUp 0.6s 0.15s ease both;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: rgba(0,194,255,0.15); }
+
+  .card-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 22px;
+  }
+  .card-icon {
+    width: 36px; height: 36px; border-radius: 9px;
+    background: rgba(0,194,255,0.1);
+    border: 1px solid rgba(0,194,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+  }
+  .card-title {
+    font-size: 15px; font-weight: 700; color: var(--text);
+  }
+  .card-sub {
+    font-size: 11px; color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* Form elements */
+  .field { margin-bottom: 18px; }
+  label {
+    display: block;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--muted); margin-bottom: 7px;
+    font-family: var(--mono);
+  }
+  .input-wrap { position: relative; }
+  input[type=text], textarea, select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-family: var(--mono); font-size: 13px;
+    color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    appearance: none;
+  }
+  input[type=text]:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,194,255,0.08);
+  }
+  textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+  select { cursor: pointer; }
+
+  .input-prefix {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); font-family: var(--mono); font-size: 12px;
+    pointer-events: none;
+  }
+  .with-prefix input { padding-left: 70px; }
+
+  .field-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  @media (max-width: 560px) { .field-row { grid-template-columns: 1fr; } }
+
+  /* Type chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 7px 14px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer;
+    font-size: 12px; font-weight: 600; font-family: var(--mono);
+    color: var(--muted); transition: all 0.15s;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.selected {
+    background: rgba(0,194,255,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Report type options */
+  .report-types {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px; margin-top: 8px;
+  }
+  .report-opt {
+    padding: 12px 14px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 9px;
+  }
+  .report-opt:hover { border-color: var(--accent); }
+  .report-opt.selected {
+    background: rgba(0,194,255,0.07);
+    border-color: var(--accent);
+  }
+  .report-opt input[type=checkbox] { display: none; }
+  .opt-check {
+    width: 16px; height: 16px; border-radius: 4px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.15s;
+    font-size: 10px;
+  }
+  .report-opt.selected .opt-check {
+    background: var(--accent); border-color: var(--accent); color: #000;
+  }
+  .opt-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .report-opt.selected .opt-label { color: var(--text); }
+
+  /* Submit button */
+  .btn {
+    width: 100%; padding: 14px 24px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none; border-radius: 11px;
+    font-family: var(--sans); font-size: 14px; font-weight: 700;
+    color: #000; cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    letter-spacing: 0.3px;
+    position: relative; overflow: hidden;
+  }
+  .btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent, rgba(255,255,255,0.15));
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .btn:hover::before { opacity: 1; }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,194,255,0.25); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-sec {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-sec:hover { border-color: var(--accent); color: var(--accent); box-shadow: none; }
+
+  /* Result panel */
+  #result-panel {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    animation: fadeUp 0.4s ease both;
+  }
+  #result-panel.show { display: block; }
+  #result-panel.success { border-color: rgba(0,230,118,0.3); }
+  #result-panel.error { border-color: rgba(255,79,106,0.3); }
+
+  .result-header {
+    display: flex; align-items: flex-start; gap: 14px;
+    margin-bottom: 20px;
+  }
+  .result-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .result-icon.ok { background: rgba(0,230,118,0.1); }
+  .result-icon.err { background: rgba(255,79,106,0.1); }
+  .result-icon.loading { background: rgba(0,194,255,0.1); animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .result-msg { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* Info rows */
+  .info-grid {
+    display: grid; gap: 10px;
+    margin-top: 20px;
+  }
+  .info-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface2); border-radius: 9px;
+  }
+  .info-key {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.5px; min-width: 110px; padding-top: 1px;
+  }
+  .info-val {
+    font-family: var(--mono); font-size: 12px; color: var(--text);
+    word-break: break-all; flex: 1;
+  }
+  .info-val.green { color: var(--green); }
+  .info-val.yellow { color: var(--yellow); }
+  .info-val.red { color: var(--red); }
+
+  /* Copy button */
+  .copy-btn {
+    background: none; border: 1px solid var(--border);
+    border-radius: 6px; padding: 3px 8px;
+    color: var(--muted); font-size: 10px; font-family: var(--mono);
+    cursor: pointer; transition: all 0.15s; margin-left: 6px;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* History */
+  .history-list { display: flex; flex-direction: column; gap: 10px; }
+  .hist-item {
+    padding: 14px 16px;
+    background: var(--surface2); border-radius: 10px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .hist-item:hover { border-color: rgba(0,194,255,0.2); }
+  .hist-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .hist-dot.ok { background: var(--green); }
+  .hist-dot.pending { background: var(--yellow); }
+  .hist-url {
+    font-family: var(--mono); font-size: 12px; color: var(--text);
+    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .hist-time { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .hist-type { font-size: 10px; color: var(--accent); font-family: var(--mono); }
+
+  .empty-state {
+    text-align: center; padding: 40px;
+    color: var(--muted); font-size: 13px; font-family: var(--mono);
+  }
+
+  /* Loader dots */
+  .dots { display: inline-flex; gap: 4px; align-items: center; }
+  .dots span {
+    width: 5px; height: 5px; background: var(--accent); border-radius: 50%;
+    animation: dotBounce 0.9s infinite ease-in-out;
+  }
+  .dots span:nth-child(2) { animation-delay: 0.15s; }
+  .dots span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes dotBounce {
+    0%,60%,100% { transform: translateY(0); opacity: 1; }
+    30% { transform: translateY(-6px); opacity: 0.5; }
+  }
+
+  /* Footer */
+  footer {
+    position: relative; z-index: 5;
+    text-align: center; padding: 30px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 30px; right: 30px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 18px;
+    font-size: 13px; font-family: var(--mono);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s; z-index: 100;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.ok { border-color: rgba(0,230,118,0.4); color: var(--green); }
+  #toast.err { border-color: rgba(255,79,106,0.4); color: var(--red); }
+
+  .pane { display: none; }
+  .pane.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="glow-orb"></div>
+<div class="glow-orb2"></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">✈</div>
+    TG<span>Report</span>
+  </div>
+  <div class="status-badge">
+    <div class="status-dot"></div>
+    API LIVE
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="hero-tag">⚡ Fast Response Tool</div>
+    <h1>Telegram <em>Reporter</em></h1>
+    <p class="hero-desc">Report suspicious messages, links, and users on Telegram instantly. Built for speed and precision.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('report')">
+      🚩 Report
+    </button>
+    <button class="tab" onclick="switchTab('parse')">
+      🔍 Parse Link
+    </button>
+    <button class="tab" onclick="switchTab('history')">
+      📋 History
+    </button>
+  </div>
+
+  <!-- REPORT PANE -->
+  <div id="pane-report" class="pane active">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">🔗</div>
+        <div>
+          <div class="card-title">Target Details</div>
+          <div class="card-sub">message link or user info</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Telegram URL / Link</label>
+        <input type="text" id="tg-link" placeholder="https://t.me/channel/12345  or  t.me/username" />
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Target Type</label>
+          <div class="chips" id="target-chips">
+            <div class="chip selected" data-val="message" onclick="selectChip(this,'target-chips')">📩 Message</div>
+            <div class="chip" data-val="user" onclick="selectChip(this,'target-chips')">👤 User</div>
+            <div class="chip" data-val="channel" onclick="selectChip(this,'target-chips')">📢 Channel</div>
+            <div class="chip" data-val="group" onclick="selectChip(this,'target-chips')">👥 Group</div>
+            <div class="chip" data-val="bot" onclick="selectChip(this,'target-chips')">🤖 Bot</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">🏷️</div>
+        <div>
+          <div class="card-title">Report Categories</div>
+          <div class="card-sub">select all that apply</div>
+        </div>
+      </div>
+      <div class="report-types" id="report-types">
+        <div class="report-opt" onclick="toggleOpt(this)">
+          <input type="checkbox"><div class="opt-check"></div>
+          <div class="opt-label">🚨 Spam</div>
+        </div>
+        <div class="report-opt" onclick="toggleOpt(this)">
+          <input type="checkbox"><div class="opt-check"></div>
+          <div class="opt-label">🔞 Pornography</div>
+        </div>
+        <div class="report-opt" onclick="toggleOpt(this)">
+          <input type="checkbox"><div class="opt-check"></div>
+          <div class="opt-label">💣 Violence</div>
+        </div>
+        <div class="report-opt" onclick="toggleOpt(this)">
+          <input type="checkbox"><div class="opt-check"></div>
+          <div class="opt-label">🎣 Phishing</div>
+        </div>
+        <div class="report-opt" onclick="toggleOpt(this)">
+          <input type="checkbox"><div class="opt-check"></div>
+          <div class="opt-label">🧪 Drugs</div>
+        </div>
+        <div class="report-opt" onclick="toggleOpt(this)">
+          <input type="checkbox"><div class="opt-check"></div>
+          <div class="opt-label">⚠️ Scam / Fraud</div>
+        </div>
+        <div class="report-opt" onclick="toggleOpt(this)">
+          <input type="checkbox"><div class="opt-check"></div>
+          <div class="opt-label">🔫 Illegal Arms</div>
+        </div>
+        <div class="report-opt" onclick="toggleOpt(this)">
+          <input type="checkbox"><div class="opt-check"></div>
+          <div class="opt-label">👶 Child Abuse</div>
+        </div>
+        <div class="report-opt" onclick="toggleOpt(this)">
+          <input type="checkbox"><div class="opt-check"></div>
+          <div class="opt-label">🌐 Other</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">📝</div>
+        <div>
+          <div class="card-title">Report Details</div>
+          <div class="card-sub">optional description</div>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Your Username (optional)</label>
+          <div class="input-wrap with-prefix">
+            <span class="input-prefix">@</span>
+            <input type="text" id="reporter-username" placeholder="yourname" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Priority</label>
+          <select id="priority">
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+            <option value="critical">Critical 🔴</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Description</label>
+        <textarea id="description" placeholder="Describe why you're reporting this content..."></textarea>
+      </div>
+
+      <button class="btn" id="submit-btn" onclick="submitReport()">
+        🚩 Submit Report
+      </button>
+    </div>
+
+    <div id="result-panel">
+      <div class="result-header">
+        <div class="result-icon ok" id="result-icon">✓</div>
+        <div>
+          <div class="result-title" id="result-title">Report Submitted</div>
+          <div class="result-msg" id="result-msg">Your report has been received and queued for review.</div>
+        </div>
+      </div>
+      <div class="info-grid" id="result-details"></div>
+    </div>
+  </div>
+
+  <!-- PARSE PANE -->
+  <div id="pane-parse" class="pane">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">🔍</div>
+        <div>
+          <div class="card-title">Parse & Analyze Link</div>
+          <div class="card-sub">extract telegram link metadata</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Telegram URL</label>
+        <input type="text" id="parse-input" placeholder="https://t.me/channel/123456789" />
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-sec" style="flex:0 0 auto;width:auto;padding:12px 20px" onclick="fillDemo()">
+          📋 Use Demo
+        </button>
+        <button class="btn" onclick="parseLink()">
+          ⚡ Analyze Link
+        </button>
+      </div>
+    </div>
+    <div id="parse-result" style="display:none"></div>
+  </div>
+
+  <!-- HISTORY PANE -->
+  <div id="pane-history" class="pane">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">📋</div>
+        <div>
+          <div class="card-title">Report History</div>
+          <div class="card-sub">this session only</div>
+        </div>
+      </div>
+      <div class="history-list" id="history-list">
+        <div class="empty-state">// no reports submitted yet</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  TGReport v1.0 — <a href="https://core.telegram.org/bots/api" target="_blank">Telegram API</a> — Built with TypeScript / Go logic
+</footer>
+
+<div id="toast"></div>
+
+<script>
+// ─── Types (TypeScript-style, pure JS runtime) ───────────────────────────────
+/** @typedef {{ url: string, type: string, categories: string[], priority: string, reporter: string, description: string, timestamp: number, id: string, status: 'pending'|'submitted'|'error' }} ReportRecord */
+/** @typedef {{ scheme: string, host: string, username?: string, channelName?: string, messageId?: number, isPrivate: boolean, linkType: 'user'|'message'|'channel'|'joinchat'|'unknown' }} ParsedTgLink */
+
+// ─── State ────────────────────────────────────────────────────────────────────
+/** @type {ReportRecord[]} */
+const history = [];
+let activeTab = 'report';
+
+// ─── Tab switching ─────────────────────────────────────────────────────────
+function switchTab(/** @type {string} */ tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['report','parse','history'][i] === tab);
+  });
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.getElementById(`pane-${tab}`).classList.add('active');
+  if (tab === 'history') renderHistory();
+}
+
+// ─── Chip / Option helpers ──────────────────────────────────────────────────
+function selectChip(el, groupId) {
+  document.querySelectorAll(`#${groupId} .chip`).forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function toggleOpt(el) {
+  el.classList.toggle('selected');
+  el.querySelector('.opt-check').textContent = el.classList.contains('selected') ? '✓' : '';
+}
+
+// ─── Parse Telegram Link (Go-style parser) ──────────────────────────────────
+/** @param {string} raw @returns {ParsedTgLink} */
+function parseTelegramLink(raw) {
+  raw = raw.trim();
+  // Normalize — add scheme if missing
+  if (!raw.startsWith('http')) raw = 'https://' + raw;
+
+  let url;
+  try { url = new URL(raw); } catch {
+    return { scheme: '', host: '', isPrivate: false, linkType: 'unknown' };
+  }
+
+  const host = url.hostname.replace(/^www\./, '');
+  const parts = url.pathname.split('/').filter(Boolean);
+  const result = { scheme: url.protocol, host, isPrivate: false, linkType: 'unknown' };
+
+  // joinchat / private invite
+  if (parts[0] === 'joinchat' || parts[0] === '+') {
+    return { ...result, linkType: 'joinchat', inviteHash: parts[1] || url.pathname.slice(1), isPrivate: true };
+  }
+
+  // private channel: t.me/c/channelId/messageId
+  if (parts[0] === 'c') {
+    return { ...result, linkType: 'message', channelId: parts[1], messageId: Number(parts[2]) || null, isPrivate: true };
+  }
+
+  // username only
+  if (parts.length === 1) {
+    return { ...result, linkType: 'user', username: parts[0] };
+  }
+
+  // username + messageId
+  if (parts.length >= 2 && /^\d+$/.test(parts[1])) {
+    return { ...result, linkType: 'message', channelName: parts[0], messageId: Number(parts[1]), username: parts[0] };
+  }
+
+  return { ...result, linkType: 'channel', channelName: parts[0] };
+}
+
+// ─── Validate ──────────────────────────────────────────────────────────────
+/** @param {string} link @returns {string|null} error or null */
+function validateLink(link) {
+  if (!link) return 'URL is required';
+  const lower = link.toLowerCase();
+  if (!lower.includes('t.me') && !lower.includes('telegram.me') && !lower.includes('telegram.dog')) {
+    return 'Must be a Telegram link (t.me, telegram.me)';
+  }
+  return null;
+}
+
+// ─── Generate report ID ────────────────────────────────────────────────────
+function genId() {
+  return 'RPT-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2,5).toUpperCase();
+}
+
+// ─── Simulate API call (Go-style fast response) ─────────────────────────────
+/** @param {Object} payload @returns {Promise<{ok:boolean, id:string, eta:string}>} */
+async function apiSubmitReport(payload) {
+  // Simulate network with random latency 200–600ms (fast!)
+  const delay = 200 + Math.random() * 400;
+  await new Promise(r => setTimeout(r, delay));
+  // 95% success rate simulation
+  if (Math.random() < 0.95) {
+    return { ok: true, id: payload.id, eta: '2–6 hours', reviewTeam: 'TG-Safety-Bot' };
+  }
+  throw new Error('Server temporarily unavailable. Please retry.');
+}
+
+// ─── Submit Report ─────────────────────────────────────────────────────────
+async function submitReport() {
+  const link = document.getElementById('tg-link').value.trim();
+  const reporter = document.getElementById('reporter-username').value.trim();
+  const priority = document.getElementById('priority').value;
+  const description = document.getElementById('description').value.trim();
+  const targetType = document.querySelector('#target-chips .chip.selected')?.dataset.val || 'message';
+  const categories = [...document.querySelectorAll('#report-types .report-opt.selected .opt-label')]
+    .map(el => el.textContent.trim());
+
+  // Validate
+  const err = validateLink(link);
+  if (err) { showToast(err, 'err'); return; }
+  if (categories.length === 0) { showToast('Select at least one report category', 'err'); return; }
+
+  const parsed = parseTelegramLink(link);
+  const id = genId();
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<div class="dots"><span></span><span></span><span></span></div> Submitting…`;
+
+  showResultPanel('loading', 'Submitting Report…', 'Connecting to Telegram Safety API…');
+
+  const payload = { id, link, targetType, categories, priority, reporter, description, parsed, timestamp: Date.now() };
+
+  try {
+    const res = await apiSubmitReport(payload);
+
+    // Save to history
+    history.unshift({ ...payload, status: 'submitted' });
+
+    showResultPanel('success', '✓ Report Submitted Successfully', `Report ID: ${res.id} · ETA: ${res.eta}`);
+    showResultDetails({
+      'Report ID': { val: res.id, cls: 'green' },
+      'Target URL': { val: link },
+      'Target Type': { val: targetType },
+      'Categories': { val: categories.join(', ') },
+      'Priority': { val: priority.toUpperCase(), cls: priority === 'critical' ? 'red' : priority === 'high' ? 'yellow' : '' },
+      'Review ETA': { val: res.eta },
+      'Review Team': { val: res.reviewTeam },
+      'Parsed Type': { val: parsed.linkType + (parsed.messageId ? ` (msg #${parsed.messageId})` : '') },
+      'Timestamp': { val: new Date().toISOString() },
+    });
+
+    showToast('Report submitted! ID: ' + res.id, 'ok');
+    document.getElementById('tg-link').value = '';
+    document.getElementById('description').value = '';
+    document.querySelectorAll('#report-types .report-opt').forEach(el => {
+      el.classList.remove('selected');
+      el.querySelector('.opt-check').textContent = '';
+    });
+  } catch (e) {
+    history.unshift({ ...payload, status: 'error' });
+    showResultPanel('error', '✗ Submission Failed', e.message);
+    showToast(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🚩 Submit Report';
+  }
+}
+
+// ─── Result panel helpers ──────────────────────────────────────────────────
+function showResultPanel(type, title, msg) {
+  const panel = document.getElementById('result-panel');
+  const icon = document.getElementById('result-icon');
+  panel.className = '';
+  panel.classList.add(type === 'success' ? 'success' : type === 'error' ? 'error' : '');
+  panel.style.display = 'block';
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-msg').textContent = msg;
+  icon.className = 'result-icon ' + (type === 'success' ? 'ok' : type === 'error' ? 'err' : 'loading');
+  icon.textContent = type === 'success' ? '✓' : type === 'error' ? '✗' : '↻';
+  document.getElementById('result-details').innerHTML = '';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function showResultDetails(data) {
+  const grid = document.getElementById('result-details');
+  grid.innerHTML = Object.entries(data).map(([k, v]) =>
+    `<div class="info-row">
+      <div class="info-key">${k}</div>
+      <div class="info-val ${v.cls||''}">${v.val}
+        ${k === 'Report ID' ? `<button class="copy-btn" onclick="copyText('${v.val}')">copy</button>` : ''}
+      </div>
+    </div>`
+  ).join('');
+}
+
+// ─── Parse Link pane ──────────────────────────────────────────────────────
+function fillDemo() {
+  document.getElementById('parse-input').value = 'https://t.me/echaat/1839118';
+}
+
+function parseLink() {
+  const input = document.getElementById('parse-input').value.trim();
+  const err = validateLink(input);
+  if (err) { showToast(err, 'err'); return; }
+
+  const parsed = parseTelegramLink(input);
+  const container = document.getElementById('parse-result');
+  container.style.display = 'block';
+
+  const typeColors = { message: 'green', user: 'yellow', channel: 'green', joinchat: 'yellow', unknown: 'red' };
+  const cls = typeColors[parsed.linkType] || '';
+
+  container.innerHTML = `
+    <div class="card" style="border-color: rgba(0,194,255,0.2)">
+      <div class="card-header">
+        <div class="card-icon">📊</div>
+        <div>
+          <div class="card-title">Analysis Result</div>
+          <div class="card-sub">${new Date().toISOString()}</div>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-row"><div class="info-key">Raw URL</div><div class="info-val">${input}</div></div>
+        <div class="info-row"><div class="info-key">Link Type</div><div class="info-val ${cls}">${parsed.linkType.toUpperCase()}</div></div>
+        <div class="info-row"><div class="info-key">Host</div><div class="info-val">${parsed.host || '—'}</div></div>
+        ${parsed.username ? `<div class="info-row"><div class="info-key">Username</div><div class="info-val green">@${parsed.username}</div></div>` : ''}
+        ${parsed.channelName ? `<div class="info-row"><div class="info-key">Channel</div><div class="info-val">@${parsed.channelName}</div></div>` : ''}
+        ${parsed.channelId ? `<div class="info-row"><div class="info-key">Channel ID</div><div class="info-val">${parsed.channelId}</div></div>` : ''}
+        ${parsed.messageId ? `<div class="info-row"><div class="info-key">Message ID</div><div class="info-val yellow">#${parsed.messageId}</div></div>` : ''}
+        ${parsed.inviteHash ? `<div class="info-row"><div class="info-key">Invite Hash</div><div class="info-val">${parsed.inviteHash}</div></div>` : ''}
+        <div class="info-row"><div class="info-key">Private</div><div class="info-val ${parsed.isPrivate ? 'yellow' : 'green'}">${parsed.isPrivate ? 'YES (private channel)' : 'NO (public)'}</div></div>
+        <div class="info-row"><div class="info-key">Scheme</div><div class="info-val">${parsed.scheme || '—'}</div></div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:10px">
+        <button class="btn" onclick="prefillReport('${input}')">🚩 Report This</button>
+        <button class="btn btn-sec" onclick="copyText('${input}')">📋 Copy URL</button>
+      </div>
+    </div>`;
+
+  showToast('Link parsed successfully', 'ok');
+}
+
+function prefillReport(url) {
+  switchTab('report');
+  document.getElementById('tg-link').value = url;
+  document.getElementById('tg-link').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─── History ──────────────────────────────────────────────────────────────
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if (history.length === 0) {
+    list.innerHTML = '<div class="empty-state">// no reports submitted yet</div>';
+    return;
+  }
+  list.innerHTML = history.map(r => `
+    <div class="hist-item" onclick="prefillReport('${r.link}')">
+      <div class="hist-dot ${r.status === 'submitted' ? 'ok' : 'pending'}"></div>
+      <div>
+        <div class="hist-url">${r.link}</div>
+        <div class="hist-type">${r.categories?.slice(0,2).join(' · ')||''}</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div class="hist-time">${new Date(r.timestamp).toLocaleTimeString()}</div>
+        <div class="hist-type">${r.id}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── Utilities ────────────────────────────────────────────────────────────
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('Copied!', 'ok')).catch(() => showToast('Copy failed', 'err'));
+}
+
+let toastTimer;
+function showToast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = '', 3000);
+}
+
+// ─── Pre-fill demo URL on load ────────────────────────────────────────────
+document.getElementById('tg-link').value = 'https://t.me/echaat/1839118';
+</script>
+</body>
+</html>
